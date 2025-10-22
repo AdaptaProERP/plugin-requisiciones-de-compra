@@ -116,11 +116,13 @@ PROCE MAIN(cCodigo,cCodSuc,cRif,cCenCos,cCodCaj)
    oRQCYC:nBalance  :=nBalance
 
    oRQCYC:nAltoBrw  :=160-30 // 100+100+08
-   oRQCYC:nAnchoSpl1:=120+50
+   oRQCYC:nAnchoSpl1:=120+50-220
 
    SetScript("ADDON_ACBL")
 
-   AADD(aBtn,{"Proyectos"                     ,"PROYECTOS.BMP"              ,"PROYECTOS"}) 
+   AADD(aBtn,{oDp:DPCENCOS                    ,"CENTRODECOSTO.BMP"          ,"CENCOS"}) 
+   AADD(aBtn,{oDp:DPDPTO                      ,"DEPARTAMENTOS.BMP"          ,"DPTO"  }) 
+
    AADD(aBtn,{"Requisiciones de Productos"    ,"PRODUCTO.BMP"               ,"REQINV"   }) 
    AADD(aBtn,{"Requisiciones de Servicios"    ,"prestadoresdeservicios.bmp" ,"REQSER"   }) 
 
@@ -134,7 +136,7 @@ PROCE MAIN(cCodigo,cCodSuc,cRif,cCenCos,cCodCaj)
    oRQCYC:Windows(0,0,oDp:aCoors[3]-(oDp:oBar:nHeight()+120),oDp:aCoors[4]-10,.T.)  
 
   @ 48+40-10+20+15, -1 OUTLOOK oRQCYC:oOut ;
-     SIZE (150+250)-40, oRQCYC:oWnd:nHeight()-140;
+     SIZE (150+250)-(40+220-10), oRQCYC:oWnd:nHeight()-(oDp:oBar:nHeight()+120);
      PIXEL ;
      FONT oFont ;
      OF oRQCYC:oWnd;
@@ -215,6 +217,34 @@ PROCE MAIN(cCodigo,cCodSuc,cRif,cCenCos,cCodCaj)
 
 
    NEXT I
+
+   DEFINE GROUP OF OUTLOOK oRQCYC:oOut PROMPT "&Crear Orden de Compra y/o Contrataciones"
+
+   aBtn:={}
+   AADD(aBtn,{"Productos"    ,"PRODUCTO.BMP"               ,"ORCINV"   }) 
+   AADD(aBtn,{"Servicios"    ,"prestadoresdeservicios.bmp" ,"ORCSER"   }) 
+
+
+   FOR I=1 TO LEN(aBtn)
+
+      DEFINE BITMAP OF OUTLOOK oRQCYC:oOut ;
+             BITMAP "BITMAPS\"+aBtn[I,2];
+             PROMPT aBtn[I,1];
+             ACTION 1=1
+
+      nGroup:=LEN(oRQCYC:oOut:aGroup)
+      oBtn:=ATAIL(oRQCYC:oOut:aGroup[ nGroup, 2 ])
+
+      bAction:=BloqueCod("oRQCYC:INVACTION(["+aBtn[I,3]+"],["+aBtn[I,1]+"])")
+
+      oBtn:bAction:=bAction
+
+      oBtn:=ATAIL(oRQCYC:oOut:aGroup[ nGroup, 3 ])
+      oBtn:bLButtonUp:=bAction
+
+
+   NEXT I
+
 
    oRQCYC:oBrw2:=TXBrowse():New(oRQCYC:oWnd)
    oRQCYC:oBrw2:SetArray( aData, .F. )
@@ -341,8 +371,6 @@ PROCE MAIN(cCodigo,cCodSuc,cRif,cCenCos,cCodCaj)
                                               nClrText:=16711808,;
                                               nClrText:=IF("M"$aData[5],16711935,nClrText),;
                                       {nClrText,iif( oBrw:nArrayAt%2=0, oRQCYC:nClrPane1, oRQCYC:nClrPane2 ) } }
-
-
 
 
    oCol:=oRQCYC:oBrw:aCols[6]
@@ -663,12 +691,26 @@ FUNCTION FRMINIT()
           OF oBar;
           NOBORDER;
           FONT oFont;
-          FILENAME "BITMAPS\CONFIGURA.BMP";
-          TOP PROMPT "Configurar"; 
+          FILENAME "BITMAPS\PROYECTOS.BMP";
+          TOP PROMPT "Proyectos"; 
           MENU oRQCYC:MENU_CNF("MENU_CNFRUN","DOS");
-          ACTION EJECUTAR("DPCONFIG")
+          ACTION DPLBX("DPPROYECTOS.LBX")
+
+//EJECUTAR("DPCONFIG")
 
   oBtn:cToolTip:="Configuración"
+
+
+  DEFINE BUTTON oBtn;
+          OF oBar;
+          NOBORDER;
+          FONT oFont;
+          FILENAME "BITMAPS\ZOOM.BMP";
+          TOP PROMPT "Zoom"; 
+          ACTION IF(oRQCYC:oWnd:IsZoomed(),oRQCYC:oWnd:Restore(),oRQCYC:oWnd:Maximize())
+
+  oBtn:cToolTip:="Maximizar"
+
 
 
   DEFINE BUTTON oBtn;
@@ -691,9 +733,14 @@ FUNCTION FRMINIT()
           FILENAME "BITMAPS\contabilidad.BMP";
           MENU oRQCYC:MENU_CTA("MENU_CTARUN","UNO");
           TOP PROMPT "Cuentas"; 
-          ACTION IIF(COUNT("DPCTA")<=1,EJECUTAR("DPCTAIMPORT"),DPLBX("DPCTAMENU.LBX"))
+          ACTION 1=1
+
+// IIF(COUNT("DPCTA")<=1,EJECUTAR("DPCTAIMPORT"),DPLBX("DPCTAMENU.LBX"))
 
   oBtn:cToolTip:="Contabilidad"
+*/
+
+/*
 
   DEFINE BUTTON oBtn;
           OF oBar;
@@ -923,12 +970,14 @@ IF .F.
 
 ENDIF
 
+/*
+
   @ 34,oBtn:nRight()+20 BUTTON oRQCYC:oBtnBalance  PROMPT " KPI "+ALLTRIM(FDP(oRQCYC:nBalance,"999,999")) OF oBar SIZE 180,24 PIXEL;
                         FONT oFont ACTION  oRQCYC:BUSCARDESCUADRE()
 
   oRQCYC:oBtnBalance:cToolTip:="Total del Balance"+CRLF+"Clic presenta balance de comprobación"
 
-
+*/
   // 17/11/2024
 
   oRQCYC:oWnd:bResized:={||( oRQCYC:oVSplit:AdjLeft(), ;
@@ -945,12 +994,24 @@ RETURN .T.
 FUNCTION INVACTION(cAction,cTexto,lUpload)
   LOCAL cTitle:=NIL,cWhere:=NIL,aFiles:={},cFileZip,cFileUp,lOk,cDir,nT1:=SECONDS()
 
-  IF "PROY"$cAction
-     RETURN DPLBX("DPPROYECTOS.LBX")
+  IF "CENC"$cAction
+     RETURN DPLBX("DPCENCOS.LBX")
+  ENDIF
+
+  IF "DPT"$cAction
+    RETURN DPLBX("DPDPTO.LBX")
   ENDIF
 
   IF "REQSER"$cAction
      RETURN EJECUTAR("DPDOCREQUIS")
+  ENDIF
+
+  IF "REQINV"$cAction
+     RETURN EJECUTAR("DPDOCREQUIM")
+  ENDIF
+
+  IF "ORCSER"$cAction
+     RETURN EJECUTAR("REQSERCONT")
   ENDIF
 
 /*
@@ -1100,6 +1161,11 @@ FUNCTION LEERDATAFIS(cWhere,oBrw,cServer)
       IF LEFT(aData[I,9],2)="EL"
          aData[I,9]:="Elaboración"
       ENDIF
+
+      IF LEFT(aData[I,9],2)="CE"
+         aData[I,9]:="Cerrado"
+      ENDIF
+
 
    NEXT I
 
@@ -1337,7 +1403,12 @@ FUNCTION MENU_CNF(cFunction,cQuien)
 
    cFrm:=oRQCYC:cVarName
 
-   AADD(aOption,{"Configurar Nómina",""})
+   AADD(aOption,{"Seleccionar cuentas para requisiciones",""})
+   AADD(aOption,{"Permisos por Usuario",""})
+   AADD(aOption,{"Tipos de Documentos" ,""})
+
+
+/*
    AADD(aOption,{"Crear Empresa",""})
    AADD(aOption,{"",""})
    AADD(aOption,{"Integración Contable"  ,""})
@@ -1354,6 +1425,7 @@ FUNCTION MENU_CNF(cFunction,cQuien)
    AADD(aOption,{"",""})
    AADD(aOption,{"Subir integración contable en AdaptaPro Server"  ,".f."})
    AADD(aOption,{"Descargar integración contable desde AdaptaPro Server"  ,".f."})
+*/
 
    C5MENU oPopFind POPUP;
           COLOR    oDp:nMenuItemClrText,oDp:nMenuItemClrPane;
@@ -1398,46 +1470,17 @@ FUNCTION MENU_CNFRUN(nOption,cPar2,cPar3)
    DEFAULT cPar3:=""
 
    IF nOption=1
-
-      IF !oDp:lAplNomina
-        MsgRun("Aperturando Nómina")
-        EJECUTAR("APLNOM")
-      ENDIF
-
-      EJECUTAR("NMCONFIG")
-
+      DPLBX("DPCTAREQ.LBX")
       RETURN
    ENDIF
 
    IF nOption=2
-     oFrm:=EJECUTAR("DPEMPRESA",1,NIL,NIL,NIL,NIL,NIL,NIL,.T.)
+     RETURN DPLBX("DPUSUREQ.LBX")
    ENDIF
 
    IF nOption=3
-     RETURN EJECUTAR("DPINTCONTABLEMNU")
+     RETURN DPLBX("DPTIPDOCPROREQCOM.LBX")
    ENDIF
-
-   IF nOption=4
-     RETURN EJECUTAR("DPCTAUSO")
-   ENDIF
-
-   IF nOption=5
-     RETURN EJECUTAR("DPIMPRXLSASIENTOSXLS")                                                                                        
-   ENDIF
-
-   IF nOption=6
-     RETURN EJECUTAR("BRXLSASIENTOS")
-   ENDIF
-
-   IF nOption=7
-     RETURN EJECUTAR("DPIMPRXLSCOMPRASXLS")                                                                                        
-   ENDIF
-
-   IF nOption=8
-     RETURN EJECUTAR("BRXLSLIBCOMPRA")
-   ENDIF
-           
-                     
                                                                                                  
 RETURN .T.
 
